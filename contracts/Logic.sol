@@ -172,7 +172,7 @@ contract Logic is SignatureVerifier {
         internal
         returns (address[] memory)
     {
-        bool success = true; // TODO Remove
+        bool success;
         bytes memory result;
 
         if (actionType == ActionType.Deposit) {
@@ -184,7 +184,6 @@ contract Logic is SignatureVerifier {
                     data
                 )
             );
-            require(success, "L: revert in action's deposit!");
         } else {
             (success, result) = adapter.delegatecall(
                 abi.encodeWithSelector(
@@ -194,7 +193,6 @@ contract Logic is SignatureVerifier {
                     data
                 )
             );
-            require(success, "L: revert in action's withdraw!");
         }
 
         require(success, "L: revert in action's delegatecall!");
