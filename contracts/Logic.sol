@@ -1,25 +1,28 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.2;
 pragma experimental ABIEncoderV2;
 
 import { Action, Approval, ActionType, AmountType } from "./Structs.sol";
 import { InteractiveAdapter } from "./interactiveAdapters/InteractiveAdapter.sol";
-import { IERC20 } from "./IERC20.sol";
+import { ERC20 } from "./ERC20.sol";
 import { SignatureVerifier } from "./SignatureVerifier.sol";
 import { AdapterRegistry } from "./AdapterRegistry.sol";
 import { TokenSpender } from "./TokenSpender.sol";
 import { SafeERC20 } from "./SafeERC20.sol";
 
 
-// TODO NatSpec
+/**
+ * @title Main contract executing actions.
+ */
 contract Logic is SignatureVerifier {
-
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 internal constant RELATIVE_AMOUNT_BASE = 1000;
 
     TokenSpender public tokenSpender;
     AdapterRegistry public adapterRegistry;
+
+    event ExecutedAction(uint256 index);
 
     constructor(
         address _adapterRegistry
@@ -30,6 +33,12 @@ contract Logic is SignatureVerifier {
         adapterRegistry = AdapterRegistry(_adapterRegistry);
     }
 
+//    /**
+//     * @notice Execute actions on signer's behalf.
+//     * @param actions Array with actions.
+//     * @param approvals Array with assets approvals for the actions.
+//     * @param signature Signature for the approvals array.
+//     */
     // function executeActions(
     //     Action[] memory actions,
     //     Approval[] memory approvals,
@@ -41,6 +50,11 @@ contract Logic is SignatureVerifier {
     //     executeActions(actions, approvals, getUserFromSignature(approvals, signature));
     // }
 
+    /**
+     * @notice Execute actions on msg.sender's behalf.
+     * @param actions Array with actions.
+     * @param approvals Array with assets approvals for the actions.
+     */
     function executeActions(
         Action[] memory actions,
         Approval[] memory approvals
@@ -65,6 +79,7 @@ contract Logic is SignatureVerifier {
 
         for (uint256 i = 0; i < length; i++) {
             assetsToBeWithdrawn[i + 1] = executeAction(actions[i]);
+            emit ExecutedAction(i);
         }
 
         returnAssets(assetsToBeWithdrawn, user);
@@ -132,10 +147,14 @@ contract Logic is SignatureVerifier {
                if (asset == ETH) {
                    totalAmount = address(this).balance;
                } else {
-                   totalAmount = IERC20(asset).balanceOf(address(this));
+                   totalAmount = ERC20(asset).balanceOf(address(this));
                }
             } else {
-                totalAmount = uint256(InteractiveAdapter(adapter).balanceOf(asset, address(this)));
+                address[] memory assets = new address[](1);
+                assets[0] = asset;
+
+                totalAmount = uint256(
+                    adapterRegistry.getBalances(address(this), adapter, assets)[0].amount);
             }
             absoluteAmount = totalAmount * amount / RELATIVE_AMOUNT_BASE;
         } else {
@@ -153,18 +172,19 @@ contract Logic is SignatureVerifier {
         internal
         returns (address[] memory)
     {
-        bool success;
+        bool success = true; // TODO Remove
         bytes memory result;
 
         if (actionType == ActionType.Deposit) {
             (success, result) = adapter.delegatecall(
                 abi.encodeWithSelector(
-                    InteractiveAdapter(adapter).withdraw.selector,
+                    InteractiveAdapter(adapter).deposit.selector,
                     assets,
                     amounts,
                     data
                 )
             );
+            require(success, "L: revert in action's deposit!");
         } else {
             (success, result) = adapter.delegatecall(
                 abi.encodeWithSelector(
@@ -174,6 +194,7 @@ contract Logic is SignatureVerifier {
                     data
                 )
             );
+            require(success, "L: revert in action's withdraw!");
         }
 
         require(success, "L: revert in action's delegatecall!");
@@ -184,16 +205,16 @@ contract Logic is SignatureVerifier {
     function returnAssets(
         address[][] memory assetsToBeWithdrawn,
         address payable user
-    ) 
-        internal 
+    )
+        internal
     {
-        IERC20 asset;
+        ERC20 asset;
         uint256 assetBalance;
 
         for (uint256 i = 0; i < assetsToBeWithdrawn.length; i++) {
             for(uint256 j = 0; j < assetsToBeWithdrawn[i].length; j++) {
-                asset = IERC20(assetsToBeWithdrawn[i][j]);
-                assetBalance = asset.balanceOf(user);
+                asset = ERC20(assetsToBeWithdrawn[i][j]);
+                assetBalance = asset.balanceOf(address(this));
                 if (assetBalance > 0) {
                     asset.safeTransfer(user, assetBalance);
                 }
@@ -206,5 +227,4 @@ contract Logic is SignatureVerifier {
         }
     }
 
-    receive() external payable {}
 }

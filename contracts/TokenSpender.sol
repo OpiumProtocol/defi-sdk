@@ -1,14 +1,14 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.2;
 pragma experimental ABIEncoderV2;
 
 import { Approval } from "./Structs.sol";
 import { Ownable } from "./Ownable.sol";
-import { IERC20 } from "./IERC20.sol";
+import { ERC20 } from "./ERC20.sol";
 import { SafeERC20 } from "./SafeERC20.sol";
 
 
 contract TokenSpender is Ownable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for ERC20;
 
     function issueAssets(
         Approval[] calldata approvals,
@@ -27,7 +27,7 @@ contract TokenSpender is Ownable {
 
             assetsToBeWithdrawn[i] = asset;
 
-            IERC20(asset).safeTransferFrom(user, msg.sender, approval.amount);
+            ERC20(asset).safeTransferFrom(user, msg.sender, approval.amount);
         }
 
         return assetsToBeWithdrawn;

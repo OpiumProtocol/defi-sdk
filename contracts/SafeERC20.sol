@@ -1,6 +1,6 @@
-pragma solidity 0.6.1;
+pragma solidity 0.6.2;
 
-import "./IERC20.sol";
+import "./ERC20.sol";
 
 
 /**
@@ -15,7 +15,7 @@ import "./IERC20.sol";
 library SafeERC20 {
 
     function safeTransfer(
-        IERC20 token,
+        ERC20 token,
         address to,
         uint256 value
     )
@@ -32,7 +32,7 @@ library SafeERC20 {
     }
 
     function safeTransferFrom(
-        IERC20 token,
+        ERC20 token,
         address from,
         address to,
         uint256 value
@@ -56,7 +56,7 @@ library SafeERC20 {
      * @param token The token targeted by the call.
      * @param data The call data (encoded using abi.encode or one of its variants).
      */
-    function callOptionalReturn(IERC20 token, bytes memory data) private {
+    function callOptionalReturn(ERC20 token, bytes memory data) private {
         // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
         // we're implementing it ourselves.
 
