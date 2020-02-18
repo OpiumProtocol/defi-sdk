@@ -152,9 +152,9 @@ contract Logic is SignatureVerifier {
             } else {
                 address[] memory assets = new address[](1);
                 assets[0] = asset;
-
-                totalAmount = uint256(
-                    adapterRegistry.getBalances(address(this), adapter, assets)[0].amount);
+                int256 signedAmount =
+                    adapterRegistry.getBalances(address(this), adapter, assets)[0].amount;
+                totalAmount = uint256(signedAmount > 0 ? signedAmount : -signedAmount);
             }
             absoluteAmount = totalAmount * amount / RELATIVE_AMOUNT_BASE;
         } else {
