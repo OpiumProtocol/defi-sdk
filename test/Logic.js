@@ -1,7 +1,7 @@
 const { BN } = web3.utils;
 const AdapterRegistry = artifacts.require('./AdapterRegistry');
 const Logic = artifacts.require('./Logic');
-const CompoundLendInteractiveAdapter = artifacts.require('./CompoundLendInteractiveAdapter');
+const CompoundInteractiveAdapter = artifacts.require('./CompoundInteractiveAdapter');
 const ChaiInteractiveAdapter = artifacts.require('./ChaiInteractiveAdapter');
 const ERC20 = artifacts.require('./ERC20');
 
@@ -13,15 +13,15 @@ contract('Logic', () => {
 
   let accounts;
   let adapterRegistry;
-  let compoundLendInteractiveAdapter;
+  let compoundInteractiveAdapter;
   let chaiInteractiveAdapter;
   let logic;
 
   beforeEach(async () => {
     accounts = await web3.eth.getAccounts();
-    await CompoundLendInteractiveAdapter.new({ from: accounts[0] })
+    await CompoundInteractiveAdapter.new({ from: accounts[0] })
       .then((result) => {
-        compoundLendInteractiveAdapter = result.contract;
+        compoundInteractiveAdapter = result.contract;
       });
     await ChaiInteractiveAdapter.new({ from: accounts[0] })
       .then((result) => {
@@ -30,7 +30,7 @@ contract('Logic', () => {
     await AdapterRegistry.new(
       [
         chaiInteractiveAdapter.options.address,
-        compoundLendInteractiveAdapter.options.address,
+        compoundInteractiveAdapter.options.address,
       ],
       [
         [
@@ -108,7 +108,7 @@ contract('Logic', () => {
     // call logic with two actions
     await logic.methods['0x39c31e1a']( // executeActions function call
       [
-        [2, compoundLendInteractiveAdapter.options.address, [cDAIAddress], [1000], [1], '0x'],
+        [2, compoundInteractiveAdapter.options.address, [cDAIAddress], [1000], [1], '0x'],
         [1, chaiInteractiveAdapter.options.address, [DAIAddress], [1000], [1], '0x'],
       ],
       [

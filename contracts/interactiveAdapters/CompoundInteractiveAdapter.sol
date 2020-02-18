@@ -2,13 +2,13 @@ pragma solidity 0.6.2;
 pragma experimental ABIEncoderV2;
 
 import { InteractiveAdapter } from "./InteractiveAdapter.sol";
-import { CompoundLendAdapter, CToken } from "../adapters/CompoundLendAdapter.sol";
+import { CompoundAdapter, CToken } from "../adapters/CompoundAdapter.sol";
 import { ERC20 } from "../ERC20.sol";
 
 
 /**
  * @dev CEther contract interface.
- * Only the functions required for CompoundLendInteractiveAdapter contract are added.
+ * Only the functions required for CompoundInteractiveAdapter contract are added.
  * The CEther contract is available here
  * https://github.com/compound-finance/compound-protocol/blob/master/contracts/CEther.sol.
  */
@@ -21,7 +21,7 @@ interface CEther {
  * @title Interactive adapter for Compound protocol lending.
  * @dev Implementation of InteractiveAdapter interface.
  */
-contract CompoundLendInteractiveAdapter is InteractiveAdapter, CompoundLendAdapter {
+contract CompoundInteractiveAdapter is InteractiveAdapter, CompoundAdapter {
 
     /**
      * @notice Deposits asset to the Compound protocol.
