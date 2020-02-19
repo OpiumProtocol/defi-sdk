@@ -53,6 +53,7 @@ contract TokenSpender is Ownable {
             require(amount <= RELATIVE_AMOUNT_BASE, "TS: wrong relative value!");
 
             absoluteAmount = ERC20(asset).balanceOf(user) * amount / RELATIVE_AMOUNT_BASE;
+            // in case allowance is too low
             absoluteAmount = min(absoluteAmount, ERC20(asset).allowance(user, address(this)));
         } else {
             absoluteAmount = amount;
