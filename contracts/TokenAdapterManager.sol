@@ -1,4 +1,4 @@
-pragma solidity 0.6.2;
+pragma solidity 0.6.3;
 pragma experimental ABIEncoderV2;
 
 import { Ownable } from "./Ownable.sol";
@@ -12,7 +12,7 @@ abstract contract TokenAdapterManager is Ownable {
 
     using Strings for string;
 
-    string internal constant INITIAL_NAME = "Initial name";
+    string internal constant INITIAL_NAME = "Initial token name";
 
     // adapter name => adapter info
     mapping (string => address) internal tokenAdapter;
@@ -21,113 +21,74 @@ abstract contract TokenAdapterManager is Ownable {
 
     /**
      * @notice Initializes contract storage.
-     * @param tokenAdapters Array with `tokenAdapter` mapping keys (adapters names).
-     * @param tokenAdapters Array with `tokenAdapter` mapping values (adapters addresses).
      */
-    constructor(
+    constructor() internal {
+        nextTokenAdapterName[INITIAL_NAME] = INITIAL_NAME;
+    }
+
+    /**
+     * @notice Adds new token adapters.
+     * The function is callable only by the owner.
+     * @param tokenAdapterNames Names of token adapters to be added.
+     * @param tokenAdapters Addresses of token adapters to be added.
+     */
+    function addTokenAdapters(
         string[] memory tokenAdapterNames,
         address[] memory tokenAdapters
     )
-        internal
+        public
+        onlyOwner
     {
-        require(tokenAdapterNames.length == tokenAdapters.length,
-            "TAM: wrong constructor params!");
+        uint256 length = tokenAdapterNames.length;
+        require(length == tokenAdapters.length, "TAM: lengths differ!");
+        require(length != 0, "PM: empty!");
 
-        nextTokenAdapterName[INITIAL_NAME] = INITIAL_NAME;
-
-        for (uint256 i = 0; i < tokenAdapterNames.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             addTokenAdapter(tokenAdapterNames[i], tokenAdapters[i]);
         }
     }
-
     /**
-     * @notice Adds new token adapter.
+     * @notice Removes token adapters.
      * The function is callable only by the owner.
-     * @param newTokenAdapter Name of token adapter to be added.
-     * @param newTokenAdapter Address of token adapter to be added.
+     * @param tokenAdapterNames Names of token adapters to be removed.
      */
-    function addTokenAdapter(
-        string memory newTokenAdapterName,
-        address newTokenAdapter
+    function removeTokenAdapters(
+        string[] memory tokenAdapterNames
     )
         public
         onlyOwner
     {
-        require(newTokenAdapter != address(0), "TAM: zero address!");
-        require(!newTokenAdapterName.isEqualTo(INITIAL_NAME), "TAM: initial name!");
-        require(!newTokenAdapterName.isEmpty(), "TAM: empty name!");
-        require(nextTokenAdapterName[newTokenAdapterName].isEmpty(), "TAM: adapter exists!");
+        require(tokenAdapterNames.length != 0, "PM: empty!");
 
-        nextTokenAdapterName[newTokenAdapterName] = nextTokenAdapterName[INITIAL_NAME];
-        nextTokenAdapterName[INITIAL_NAME] = newTokenAdapterName;
-
-        tokenAdapter[newTokenAdapterName] = newTokenAdapter;
-    }
-
-    /**
-     * @notice Removes one of token adapters.
-     * The function is callable only by the owner.
-     * @param oldTokenAdapterName Name of token adapter to be removed.
-     */
-    function removeTokenAdapter(
-        string memory oldTokenAdapterName
-    )
-        public
-        onlyOwner
-    {
-        require(isValidTokenAdapter(oldTokenAdapterName), "AAM: invalid adapter!");
-
-        string memory prevTokenAdapterName;
-        string memory currentTokenAdapterName = nextTokenAdapterName[oldTokenAdapterName];
-        while (!currentTokenAdapterName.isEqualTo(oldTokenAdapterName)) {
-            prevTokenAdapterName = currentTokenAdapterName;
-            currentTokenAdapterName = nextTokenAdapterName[currentTokenAdapterName];
+        for (uint256 i = 0; i < tokenAdapterNames.length; i++) {
+            removeTokenAdapter(tokenAdapterNames[i]);
         }
-
-        nextTokenAdapterName[prevTokenAdapterName] = nextTokenAdapterName[oldTokenAdapterName];
-        delete nextTokenAdapterName[oldTokenAdapterName];
-
-        delete tokenAdapter[oldTokenAdapterName];
     }
 
     /**
      * @notice Updates token adapter.
      * The function is callable only by the owner.
-     * @param oldTokenAdapterName Name of token adapter to be updated.
-     * @param newTokenAdapter Address of token adapter to be added instead.
+     * @param tokenAdapterName Name of token adapter to be updated.
+     * @param adapter Address of token adapter to be added instead.
      */
     function updateTokenAdapter(
-        string memory oldTokenAdapterName,
-        address newTokenAdapter
+        string memory tokenAdapterName,
+        address adapter
     )
         public
         onlyOwner
     {
-        require(isValidTokenAdapter(oldTokenAdapterName), "TAM: adapter does not exist!");
-        require(newTokenAdapter != address(0), "TAM: zero address!");
+        require(isValidTokenAdapter(tokenAdapterName), "TAM: bad name!");
+        require(adapter != address(0), "TAM: zero!");
 
-        tokenAdapter[oldTokenAdapterName] = newTokenAdapter;
-    }
-
-    /**
-     * @param tokenAdapterName Name of token adapter.
-     * @return Address of token adapter.
-     */
-    function getTokenAdapter(
-        string memory tokenAdapterName
-    )
-        public
-        view
-        returns (address)
-    {
-        return tokenAdapter[tokenAdapterName];
+        tokenAdapter[tokenAdapterName] = adapter;
     }
 
     /**
      * @return Array of token adapter names.
      */
-    function getTokenAdapters()
-        external
+    function getTokenAdapterNames()
+        public
         view
         returns (string[] memory)
     {
@@ -154,6 +115,20 @@ abstract contract TokenAdapterManager is Ownable {
 
     /**
      * @param tokenAdapterName Name of token adapter.
+     * @return Address of token adapter.
+     */
+    function getTokenAdapter(
+        string memory tokenAdapterName
+    )
+        public
+        view
+        returns (address)
+    {
+        return tokenAdapter[tokenAdapterName];
+    }
+
+    /**
+     * @param tokenAdapterName Name of token adapter.
      * @return Whether token adapter is valid.
      */
     function isValidTokenAdapter(
@@ -164,5 +139,52 @@ abstract contract TokenAdapterManager is Ownable {
         returns (bool)
     {
         return !nextTokenAdapterName[tokenAdapterName].isEmpty() && !tokenAdapterName.isEqualTo(INITIAL_NAME);
+    }
+
+    /**
+     * @notice Adds new token adapter.
+     * The function is callable only by the owner.
+     * @param tokenAdapterName Name of token adapter to be added.
+     * @param adapter Address of token adapter to be added.
+     */
+    function addTokenAdapter(
+        string memory tokenAdapterName,
+        address adapter
+    )
+        internal
+    {
+        require(!tokenAdapterName.isEqualTo(INITIAL_NAME), "TAM: initial name!");
+        require(!tokenAdapterName.isEmpty(), "TAM: empty name!");
+        require(nextTokenAdapterName[tokenAdapterName].isEmpty(), "TAM: name exists!");
+        require(adapter != address(0), "TAM: zero!");
+
+        nextTokenAdapterName[tokenAdapterName] = nextTokenAdapterName[INITIAL_NAME];
+        nextTokenAdapterName[INITIAL_NAME] = tokenAdapterName;
+
+        tokenAdapter[tokenAdapterName] = adapter;
+    }
+
+    /**
+     * @notice Removes one of token adapters.
+     * @param tokenAdapterName Name of token adapter to be removed.
+     */
+    function removeTokenAdapter(
+        string memory tokenAdapterName
+    )
+        internal
+    {
+        require(isValidTokenAdapter(tokenAdapterName), "TAM: bad name!");
+
+        string memory prevTokenAdapterName;
+        string memory currentTokenAdapterName = nextTokenAdapterName[tokenAdapterName];
+        while (!currentTokenAdapterName.isEqualTo(tokenAdapterName)) {
+            prevTokenAdapterName = currentTokenAdapterName;
+            currentTokenAdapterName = nextTokenAdapterName[currentTokenAdapterName];
+        }
+
+        nextTokenAdapterName[prevTokenAdapterName] = nextTokenAdapterName[tokenAdapterName];
+        delete nextTokenAdapterName[tokenAdapterName];
+
+        delete tokenAdapter[tokenAdapterName];
     }
 }

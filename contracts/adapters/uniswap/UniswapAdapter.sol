@@ -6,21 +6,21 @@ import { ERC20 } from "../../ERC20.sol";
 
 
 /**
- * @dev BasePool contract interface.
- * Only the functions required for PoolTogetherAdapter contract are added.
- * The BasePool contract is available here
- * github.com/pooltogether/pooltogether-contracts/blob/master/contracts/BasePool.sol.
+ * @dev Factory contract interface.
+ * Only the functions required for UniswapAdapter contract are added.
+ * The Factory contract is available here
+ * github.com/Uniswap/contracts-vyper/blob/master/contracts/uniswap_factory.vy.
  */
-interface BasePool {
-    function totalBalanceOf(address) external view returns (uint256);
+interface Factory {
+    function getToken(address) external view returns (address);
 }
 
 
 /**
- * @title Adapter for PoolTogether protocol.
+ * @title Adapter for Uniswap protocol.
  * @dev Implementation of ProtocolAdapter interface.
  */
-contract PoolTogetherAdapter is ProtocolAdapter {
+contract UniswapAdapter is ProtocolAdapter {
 
     /**
      * @return Type of the adapter.
@@ -33,15 +33,15 @@ contract PoolTogetherAdapter is ProtocolAdapter {
      * @return Type of the token used in adapter.
      */
     function tokenType() external pure override returns (string memory) {
-        return "PoolTogether pool";
+        return "Uniswap pool token";
     }
 
     /**
-     * @return Amount of tokens locked in the pool by the given account.
-     * @param token Address of the pool!
+     * @return Amount of Uniswap pool tokens held by the given account.
+     * @param token Address of the exchange (pool)!
      * @dev Implementation of ProtocolAdapter interface function.
      */
     function getBalance(address token, address account) external view override returns (uint256) {
-        return BasePool(token).totalBalanceOf(account);
+        return ERC20(token).balanceOf(account);
     }
 }

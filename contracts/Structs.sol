@@ -1,53 +1,67 @@
-pragma solidity 0.6.2;
+pragma solidity 0.6.3;
 pragma experimental ABIEncoderV2;
 
 
 struct ProtocolBalance {
-    ProtocolInfo info;
-    TokenBalanceAndComponents[] balances;
+    string name;
+    string description;
+    string websiteURL;
+    string iconURL;
+    uint256 version;
+    AdapterBalance[] adapterBalances;
 }
 
 
 struct ProtocolInfo {
     string name;
     string description;
-    string protocolType;
-    string tokenType;
+    string websiteURL;
     string iconURL;
     uint256 version;
+    AdapterInfo[] adapters;
 }
 
 
-struct TokenBalanceAndComponents {
-    TokenInfo info;
-    uint256 balance;
-    TokenBalance[] components;
+struct AdapterInfo {
+    address adapterAddress;
+    address[] supportedTokens;
 }
 
 
-struct TokenBalance {
+struct AdapterBalance {
+    string adapterType; // "Asset", "Debt"
+    FullTokenUnit[] balances;
+}
+
+
+struct FullTokenUnit {
+    TokenUnit base;
+    TokenUnit[] underlying;
+}
+
+
+struct TokenUnit {
     TokenInfo info;
-    uint256 balance;
+    uint256 value;
 }
 
 
 struct TokenInfo {
-    address tokenAddress;
+    address token;
     string name;
     string symbol;
     uint8 decimals;
 }
 
 
-struct ProtocolAdapter {
-    address adapter;
-    uint256 addedAt;
-    address[] supportedTokens;
+struct Protocol {
+    ProtocolInfo info;
+    AdapterInfo[] adapters;
 }
 
 
-struct Token {
-    address tokenAddress;
-    string tokenType;
-    uint256 value;
+struct Component {
+    address token;
+    string tokenType;  // "ERC20" by default
+    uint256 rate;  // price per share (1e18)
 }

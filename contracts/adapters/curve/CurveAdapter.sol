@@ -6,10 +6,23 @@ import { ERC20 } from "../../ERC20.sol";
 
 
 /**
- * @title Asset adapter for Compound protocol.
+ * @dev stableswap contract interface.
+ * Only the functions required for CurveAdapter contract are added.
+ * The stableswap contract is available here
+ * github.com/curvefi/curve-contract/blob/compounded/vyper/stableswap.vy.
+ */
+// solhint-disable-next-line contract-name-camelcase
+interface stableswap {
+    function coins(int128) external view returns (address);
+    function balances(int128) external view returns (uint256);
+}
+
+
+/**
+ * @title Adapter for Curve protocol.
  * @dev Implementation of Adapter interface.
  */
-contract CompoundAssetAdapter is ProtocolAdapter {
+contract CurveAdapter is ProtocolAdapter {
 
     /**
      * @return Type of the adapter.
@@ -22,11 +35,12 @@ contract CompoundAssetAdapter is ProtocolAdapter {
      * @return Type of the token used in adapter.
      */
     function tokenType() external pure override returns (string memory) {
-        return "CToken";
+        return "Curve pool token";
     }
 
     /**
-     * @return Amount of CTokens held by the given account.
+     * @return Amount of Curve pool tokens held by the given account.
+     * @param token Address of the pool token!
      * @dev Implementation of Adapter interface function.
      */
     function getBalance(address token, address account) external view override returns (uint256) {

@@ -1,36 +1,37 @@
 import displayToken from './helpers/displayToken';
 
 const AdapterRegistry = artifacts.require('./AdapterRegistry');
-const ProtocolAdapter = artifacts.require('./PoolTogetherAdapter');
-const TokenAdapter = artifacts.require('./PoolTogetherTokenAdapter');
+const ProtocolAdapter = artifacts.require('./CompoundDebtAdapter');
 const ERC20TokenAdapter = artifacts.require('./ERC20TokenAdapter');
 
-contract('PoolTogetherAdapter', () => {
-  const saiPool = '0xb7896fce748396EcFC240F5a0d3Cc92ca42D7d84';
-  const daiPool = '0x29fe7D60DdF151E5b52e5FAB4f1325da6b2bD958';
-  const usdcPool = '0x0034Ea9808E620A0EF79261c51AF20614B742B24';
-  const saiAddress = '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359';
+contract('CompoundDebtAdapter', () => {
   const daiAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
+  const batAddress = '0x0D8775F648430679A709E98d2b0Cb6250d2887EF';
+  const ethAddress = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+  const repAddress = '0x1985365e9f78359a9B6AD760e32412f4a445E862';
+  const zrxAddress = '0xE41d2489571d322189246DaFA5ebDe1F4699F498';
   const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+  const wbtcAddress = '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599';
+  const saiAddress = '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359';
   const testAddress = '0x42b9dF65B219B3dD36FF330A4dD8f327A6Ada990';
 
   let accounts;
   let adapterRegistry;
   let protocolAdapterAddress;
-  let tokenAdapterAddress;
   let erc20TokenAdapterAddress;
-  const sai = [
-    saiAddress,
-    'Sai Stablecoin v1.0',
-    'SAI',
-    '18',
-  ];
   const dai = [
     daiAddress,
     'Dai Stablecoin',
     'DAI',
     '18',
   ];
+  const sai = [
+    saiAddress,
+    'Sai Stablecoin v1.0',
+    'SAI',
+    '18',
+  ];
+
   const usdc = [
     usdcAddress,
     'USD//C',
@@ -44,10 +45,6 @@ contract('PoolTogetherAdapter', () => {
       .then((result) => {
         protocolAdapterAddress = result.address;
       });
-    await TokenAdapter.new({ from: accounts[0] })
-      .then((result) => {
-        tokenAdapterAddress = result.address;
-      });
     await ERC20TokenAdapter.new({ from: accounts[0] })
       .then((result) => {
         erc20TokenAdapterAddress = result.address;
@@ -57,7 +54,7 @@ contract('PoolTogetherAdapter', () => {
         adapterRegistry = result.contract;
       });
     await adapterRegistry.methods.addProtocols(
-      ['PoolTogether'],
+      ['Compound'],
       [[
         'Mock Protocol Name',
         'Mock protocol description',
@@ -65,7 +62,19 @@ contract('PoolTogetherAdapter', () => {
         'Mock icon',
         '0',
         [
-          [protocolAdapterAddress, [saiPool, daiPool, usdcPool]],
+          [
+            protocolAdapterAddress,
+            [
+              daiAddress,
+              batAddress,
+              ethAddress,
+              repAddress,
+              saiAddress,
+              zrxAddress,
+              usdcAddress,
+              wbtcAddress,
+            ],
+          ],
         ],
       ]],
     )
@@ -74,12 +83,12 @@ contract('PoolTogetherAdapter', () => {
         gasLimit: '1000000',
       });
     await adapterRegistry.methods.addTokenAdapters(
-      ['ERC20', 'PoolTogether pool'],
-      [erc20TokenAdapterAddress, tokenAdapterAddress],
+      ['ERC20'],
+      [erc20TokenAdapterAddress],
     )
       .send({
         from: accounts[0],
-        gasLimit: '1000000',
+        gasLimit: '300000',
       });
   });
 
@@ -87,12 +96,12 @@ contract('PoolTogetherAdapter', () => {
     await adapterRegistry.methods['getBalances(address)'](testAddress)
       .call()
       .then((result) => {
-        displayToken(result[0].adapterBalances[0].balances[0].underlying[0]);
-        displayToken(result[0].adapterBalances[0].balances[1].underlying[0]);
-        displayToken(result[0].adapterBalances[0].balances[2].underlying[0]);
-        assert.deepEqual(result[0].adapterBalances[0].balances[0].underlying[0].info, sai);
-        assert.deepEqual(result[0].adapterBalances[0].balances[1].underlying[0].info, dai);
-        assert.deepEqual(result[0].adapterBalances[0].balances[2].underlying[0].info, usdc);
+        displayToken(result[0].adapterBalances[0].balances[0].base);
+        displayToken(result[0].adapterBalances[0].balances[1].base);
+        displayToken(result[0].adapterBalances[0].balances[3].base);
+        assert.deepEqual(result[0].adapterBalances[0].balances[0].base.info, dai);
+        assert.deepEqual(result[0].adapterBalances[0].balances[4].base.info, sai);
+        assert.deepEqual(result[0].adapterBalances[0].balances[6].base.info, usdc);
       });
   });
 });

@@ -7,22 +7,23 @@ import { ERC20 } from "../../ERC20.sol";
 
 
 /**
- * @dev YToken contract interface.
- * Only the functions required for IearnAdapter contract are added.
- * The YToken contracts is available here
- * github.com/iearn-finance/itoken/tree/master/contracts.
+ * @dev BasePool contract interface.
+ * Only the functions required for PoolTogetherTokenAdapter contract are added.
+ * The BasePool contract is available here
+ * github.com/pooltogether/pooltogether-contracts/blob/master/contracts/BasePool.sol.
  */
-interface YToken {
+interface BasePool {
     function token() external view returns (address);
-    function getPricePerFullShare() external view returns (uint256);
 }
 
 
 /**
- * @title Adapter for YTokens.
+ * @title Adapter for PoolTogether pools.
  * @dev Implementation of TokenAdapter interface.
  */
-contract IearnTokenAdapter is TokenAdapter {
+contract PoolTogetherTokenAdapter is TokenAdapter {
+
+    address internal constant SAI_POOL = 0xb7896fce748396EcFC240F5a0d3Cc92ca42D7d84;
 
     /**
      * @return TokenInfo struct with ERC20-style token info.
@@ -31,9 +32,9 @@ contract IearnTokenAdapter is TokenAdapter {
     function getInfo(address token) external view override returns (TokenInfo memory) {
         return TokenInfo({
             token: token,
-            name: ERC20(token).name(),
-            symbol: ERC20(token).symbol(),
-            decimals: ERC20(token).decimals()
+            name: getPoolName(token),
+            symbol: "PLT",
+            decimals: ERC20(BasePool(token).token()).decimals()
         });
     }
 
@@ -45,11 +46,20 @@ contract IearnTokenAdapter is TokenAdapter {
         Component[] memory underlyingTokens = new Component[](1);
 
         underlyingTokens[0] = Component({
-            token: YToken(token).token(),
+            token: BasePool(token).token(),
             tokenType: "ERC20",
-            rate: YToken(token).getPricePerFullShare()
+            rate: 1e18
         });
 
         return underlyingTokens;
+    }
+
+    function getPoolName(address token) internal view returns (string memory) {
+        if (token == SAI_POOL) {
+            return "SAI pool";
+        } else {
+            address underlying = BasePool(token).token();
+            return string(abi.encodePacked(ERC20(underlying).symbol(), " pool"));
+        }
     }
 }

@@ -1,17 +1,17 @@
 import displayToken from './helpers/displayToken';
 
 const AdapterRegistry = artifacts.require('./AdapterRegistry');
-const ProtocolAdapter = artifacts.require('./PoolTogetherAdapter');
-const TokenAdapter = artifacts.require('./PoolTogetherTokenAdapter');
+const ProtocolAdapter = artifacts.require('./AaveAssetAdapter');
+const TokenAdapter = artifacts.require('./AaveTokenAdapter');
 const ERC20TokenAdapter = artifacts.require('./ERC20TokenAdapter');
 
-contract('PoolTogetherAdapter', () => {
-  const saiPool = '0xb7896fce748396EcFC240F5a0d3Cc92ca42D7d84';
-  const daiPool = '0x29fe7D60DdF151E5b52e5FAB4f1325da6b2bD958';
-  const usdcPool = '0x0034Ea9808E620A0EF79261c51AF20614B742B24';
-  const saiAddress = '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359';
+contract('AaveAssetAdapter', () => {
+  const aDAIAddress = '0xfC1E690f61EFd961294b3e1Ce3313fBD8aa4f85d';
+  const aKNCAddress = '0x9D91BE44C06d373a8a226E1f3b146956083803eB';
+  const aBATAddress = '0xE1BA0FB44CCb0D11b80F92f4f8Ed94CA3fF51D00';
   const daiAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
-  const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+  const batAddress = '0x0D8775F648430679A709E98d2b0Cb6250d2887EF';
+  const kncAddress = '0xdd974D5C2e2928deA5F71b9825b8b646686BD200';
   const testAddress = '0x42b9dF65B219B3dD36FF330A4dD8f327A6Ada990';
 
   let accounts;
@@ -19,23 +19,23 @@ contract('PoolTogetherAdapter', () => {
   let protocolAdapterAddress;
   let tokenAdapterAddress;
   let erc20TokenAdapterAddress;
-  const sai = [
-    saiAddress,
-    'Sai Stablecoin v1.0',
-    'SAI',
-    '18',
-  ];
   const dai = [
     daiAddress,
     'Dai Stablecoin',
     'DAI',
     '18',
   ];
-  const usdc = [
-    usdcAddress,
-    'USD//C',
-    'USDC',
-    '6',
+  const knc = [
+    kncAddress,
+    'Kyber Network Crystal',
+    'KNC',
+    '18',
+  ];
+  const bat = [
+    batAddress,
+    'Basic Attention Token',
+    'BAT',
+    '18',
   ];
 
   beforeEach(async () => {
@@ -57,7 +57,7 @@ contract('PoolTogetherAdapter', () => {
         adapterRegistry = result.contract;
       });
     await adapterRegistry.methods.addProtocols(
-      ['PoolTogether'],
+      ['Aave'],
       [[
         'Mock Protocol Name',
         'Mock protocol description',
@@ -65,7 +65,14 @@ contract('PoolTogetherAdapter', () => {
         'Mock icon',
         '0',
         [
-          [protocolAdapterAddress, [saiPool, daiPool, usdcPool]],
+          [
+            protocolAdapterAddress,
+            [
+              aDAIAddress,
+              aKNCAddress,
+              aBATAddress,
+            ],
+          ],
         ],
       ]],
     )
@@ -74,7 +81,7 @@ contract('PoolTogetherAdapter', () => {
         gasLimit: '1000000',
       });
     await adapterRegistry.methods.addTokenAdapters(
-      ['ERC20', 'PoolTogether pool'],
+      ['ERC20', 'AToken'],
       [erc20TokenAdapterAddress, tokenAdapterAddress],
     )
       .send({
@@ -90,9 +97,9 @@ contract('PoolTogetherAdapter', () => {
         displayToken(result[0].adapterBalances[0].balances[0].underlying[0]);
         displayToken(result[0].adapterBalances[0].balances[1].underlying[0]);
         displayToken(result[0].adapterBalances[0].balances[2].underlying[0]);
-        assert.deepEqual(result[0].adapterBalances[0].balances[0].underlying[0].info, sai);
-        assert.deepEqual(result[0].adapterBalances[0].balances[1].underlying[0].info, dai);
-        assert.deepEqual(result[0].adapterBalances[0].balances[2].underlying[0].info, usdc);
+        assert.deepEqual(result[0].adapterBalances[0].balances[0].underlying[0].info, dai);
+        assert.deepEqual(result[0].adapterBalances[0].balances[1].underlying[0].info, knc);
+        assert.deepEqual(result[0].adapterBalances[0].balances[2].underlying[0].info, bat);
       });
   });
 });

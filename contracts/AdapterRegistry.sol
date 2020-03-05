@@ -1,164 +1,352 @@
-pragma solidity 0.6.2;
+pragma solidity 0.6.3;
 pragma experimental ABIEncoderV2;
 
-import { ProtocolAdapterManager } from "./ProtocolAdapterManager.sol";
+import { Ownable } from "./Ownable.sol";
+import { ProtocolManager } from "./ProtocolManager.sol";
 import { TokenAdapterManager } from "./TokenAdapterManager.sol";
-import { Adapter } from "./adapters/Adapter.sol";
+import { ProtocolAdapter } from "./adapters/ProtocolAdapter.sol";
 import { TokenAdapter } from "./adapters/TokenAdapter.sol";
-import { ProtocolAdapter, ProtocolBalance, TokenBalanceAndComponents, TokenBalance, Token } from "./Structs.sol";
+import { Strings } from "./Strings.sol";
+import {
+    ProtocolBalance,
+    ProtocolInfo,
+    AdapterBalance,
+    AdapterInfo,
+    FullTokenUnit,
+    TokenUnit,
+    TokenInfo,
+    Component
+} from "./Structs.sol";
 
 
 /**
-* @title Registry for protocol adapters.
-* @notice getAssetBalances() and getAssetRates() functions
-* with different arguments implement the main functionality.
+* @title Registry for protocols, protocol adapters, and token adapters.
+* @notice getBalances() function implements the main functionality.
 */
-contract AdapterRegistry is ProtocolAdapterManager {
+contract AdapterRegistry is Ownable, ProtocolManager, TokenAdapterManager {
 
-    constructor(
-        string[] memory protocolAdapterNames,
-        ProtocolAdapter[] memory protocolAdapters,
-        string[] memory tokenAdapterNames,
-        address[] memory tokenAdapters
-    )
-        public
-        ProtocolAdapterManager(protocolAdapterNames, protocolAdapters)
-        TokenAdapterManager(tokenAdapterNames, tokenAdapters)
-    // solhint-disable-next-line no-empty-blocks
-    {}
+    using Strings for string;
 
     /**
-     * @return All the amounts of supported tokens
-     * via supported adapters by the given user.
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @return Final components by token type and token address.
      */
-    function getProtocolBalances(
-        address user
+    function getFullTokenUnit(
+        string calldata tokenType,
+        address token
+    )
+        external
+        view
+        returns (FullTokenUnit memory)
+    {
+        Component[] memory components = getComponents(tokenType, token, 1e18);
+        return getFullTokenUnit(tokenType, token, 1e18, components);
+    }
+
+    /**
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @return Final components by token type and token address.
+     */
+    function getFinalFullTokenUnit(
+        string calldata tokenType,
+        address token
+    )
+        external
+        view
+        returns (FullTokenUnit memory)
+    {
+        Component[] memory finalComponents = getFinalComponents(tokenType, token, 1e18);
+        return getFullTokenUnit(tokenType, token, 1e18, finalComponents);
+    }
+    /**
+     * @param account Address of the account.
+     * @return ProtocolBalance array by the given account.
+     */
+    function getBalances(
+        address account
     )
         external
         view
         returns (ProtocolBalance[] memory)
     {
-        string[] memory protocolAdapterNames = getProtocolAdapters();
-        uint256 length = protocolAdapterNames.length;
-        ProtocolBalance[] memory protocolBalances =
-            new ProtocolBalance[](length);
+        string[] memory protocolNames = getProtocolNames();
 
-        for (uint256 i = 0; i < length; i++) {
-            protocolBalances[i] = getProtocolBalance(user, protocolAdapterNames[i]);
+        return getProtocolBalances(account, protocolNames);
+    }
+
+    /**
+     * @param account Address of the account.
+     * @param protocolNames Array of the protocols' names.
+     * @return ProtocolBalance array by the given account and names of protocols.
+     */
+    function getProtocolBalances(
+        address account,
+        string[] memory protocolNames
+    )
+        public
+        view
+        returns (ProtocolBalance[] memory)
+    {
+        ProtocolBalance[] memory protocolBalances = new ProtocolBalance[](protocolNames.length);
+
+        for (uint256 i = 0; i < protocolNames.length; i++) {
+            protocolBalances[i] = ProtocolBalance({
+                name: protocol[protocolNames[i]].name,
+                description: protocol[protocolNames[i]].description,
+                websiteURL: protocol[protocolNames[i]].websiteURL,
+                iconURL: protocol[protocolNames[i]].iconURL,
+                version: protocol[protocolNames[i]].version,
+                adapterBalances: getAdapterBalances(account, protocol[protocolNames[i]].adapters)
+            });
         }
 
         return protocolBalances;
     }
 
     /**
-     * @return All the amounts of supported tokens
-     * by the given adapter by the given user.
+     * @param account Address of the account.
+     * @param protocolAdapters Array of the protocol adapters' addresses.
+     * @return AdapterBalance array by the given account and adapter structs.
      */
-    function getProtocolBalance(
-        address user,
-        string memory protocolAdapterName
+    function getAdapterBalances(
+        address account,
+        AdapterInfo[] memory protocolAdapters
     )
         public
         view
-        returns (ProtocolBalance memory)
+        returns (AdapterBalance[] memory)
     {
-        return getProtocolBalance(
-            user,
-            protocolAdapterName,
-            protocolAdapter[protocolAdapterName].supportedTokens
-        );
-    }
+        AdapterBalance[] memory adapterBalances = new AdapterBalance[](protocolAdapters.length);
 
-    /**
-     * @return All the amounts and rates of the given tokens
-     * by the given adapter by the given user.
-     */
-    function getProtocolBalance(
-        address user,
-        string memory protocolAdapterName,
-        address[] memory supportedTokens
-    )
-        public
-        view
-        returns (ProtocolBalance memory)
-    {
-        Adapter adapter = Adapter(protocolAdapter[protocolAdapterName].adapter);
-        ProtocolBalance memory protocolBalance;
-        protocolBalance.info = adapter.getInfo();
-
-        TokenBalanceAndComponents[] memory tokenBalancesAndComponents = new TokenBalanceAndComponents[](supportedTokens.length);
-        uint256 balance;
-
-        for (uint256 i = 0; i < supportedTokens.length; i++) {
-            balance = adapter.getBalance(user, supportedTokens[i]); // TODO try-catch
-            tokenBalancesAndComponents[i] = getTokenBalanceAndComponents(
-                supportedTokens[i],
-                protocolBalance.info.tokenType,
-                balance
+        for (uint256 i = 0; i < protocolAdapters.length; i++) {
+            adapterBalances[i] = getAdapterBalance(
+                account,
+                protocolAdapters[i].adapterAddress,
+                protocolAdapters[i].supportedTokens
             );
         }
 
-        protocolBalance.balances = tokenBalancesAndComponents;
-        return protocolBalance;
+        return adapterBalances;
     }
 
     /**
-     * @return All the exchange rates of the given tokens by the given adapter.
+     * @param account Address of the account.
+     * @param protocolAdapter Address of the protocol adapter.
+     * @param tokens Array with tokens' addresses.
+     * @return AdapterBalance array by the given account, address of adapter, and addresses of tokens.
      */
-    function getUnderlyingTokens(
-        string calldata tokenAdapterName,
-        address token
-    )
-        external
-        view
-        returns (Token[] memory)
-    {
-        return TokenAdapter(tokenAdapter[tokenAdapterName]).getUnderlyingTokens(token);
-
-    }
-
-    function getTokenBalanceAndComponents(
-        address token,
-        string memory tokenType,
-        uint256 balance
+    function getAdapterBalance(
+        address account,
+        address protocolAdapter,
+        address[] memory tokens
     )
         internal
         view
-        returns (TokenBalanceAndComponents memory)
+        returns (AdapterBalance memory)
     {
-        TokenAdapter tokenAdapter = TokenAdapter(getTokenAdapter(tokenType));
-        Token[] memory components = tokenAdapter.getUnderlyingTokens(token); // TODO try-catch
-        TokenBalance[] memory componentsBalances = new TokenBalance[](components.length);
+        FullTokenUnit[] memory finalFullTokenUnits = new FullTokenUnit[](tokens.length);
+        ProtocolAdapter adapter = ProtocolAdapter(protocolAdapter);
+        string memory tokenType = adapter.tokenType();
+        uint256 value;
 
-        for (uint i = 0; i < components.length; i++) {
-            componentsBalances[i] = getTokenBalance(
-                components[i].tokenAddress,
+        for (uint256 i = 0; i < tokens.length; i++) {
+            try adapter.getBalance(tokens[i], account) returns (uint256 result) {
+                value = result;
+            } catch {
+                value = 0;
+            }
+
+            finalFullTokenUnits[i] = getFullTokenUnit(
+                tokenType,
+                tokens[i],
+                value,
+                getFinalComponents(tokenType, tokens[i], 1e18)
+            );
+        }
+
+        return AdapterBalance({
+            adapterType: adapter.adapterType(),
+            balances: finalFullTokenUnits
+        });
+    }
+
+    /**
+     * @param tokenType Type of the base token.
+     * @param token Address of the base token.
+     * @param value Amount of the base token.
+     * @return FullTokenUnit by the given components.
+     */
+    function getFullTokenUnit(
+        string memory tokenType,
+        address token,
+        uint256 value,
+        Component[] memory components
+    )
+        internal
+        view
+        returns (FullTokenUnit memory)
+    {
+        TokenUnit[] memory componentTokenUnits = new TokenUnit[](components.length);
+
+        for (uint256 i = 0; i < components.length; i++) {
+            componentTokenUnits[i] = getTokenUnit(
                 components[i].tokenType,
-                components[i].value * balance
+                components[i].token,
+                components[i].rate * value / 1e18
             );
         }
 
-        return TokenBalanceAndComponents({
-            info: tokenAdapter.getInfo(token),
-            balance: balance,
-            components: componentsBalances
+        return FullTokenUnit({
+            base: getTokenUnit(tokenType, token, value),
+            underlying: componentTokenUnits
         });
     }
 
-    function getTokenBalance(
-        address token,
+    /**
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @return Final components by token type and token address.
+     */
+    function getFinalComponents(
         string memory tokenType,
-        uint256 balance
+        address token,
+        uint256 value
     )
         internal
         view
-        returns (TokenBalance memory)
+        returns (Component[] memory)
     {
-        TokenAdapter tokenAdapter = TokenAdapter(getTokenAdapter(tokenType));
+        uint256 totalLength;
 
-        return TokenBalance({
-            info: tokenAdapter.getInfo(token),
-            balance: balance
-        });
+        totalLength = getFinalComponentsNumber(tokenType, token, true);
+
+        Component[] memory finalTokens = new Component[](totalLength);
+        uint256 length;
+        uint256 init = 0;
+
+        Component[] memory components = getComponents(tokenType, token, value);
+
+        for (uint256 i = 0; i < components.length; i++) {
+            Component[] memory finalComponents = getFinalComponents(
+                components[i].tokenType,
+                components[i].token,
+                components[i].rate
+            );
+
+            length = finalComponents.length;
+
+            if (length == 0) {
+                finalTokens[init] = components[i];
+                init = init + 1;
+            } else {
+                for (uint256 j = 0; j < length; j++) {
+                    finalTokens[init + j] = finalComponents[j];
+                }
+
+                init = init + length;
+            }
+        }
+
+        return finalTokens;
+    }
+
+    /**
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @return Final tokens number by token type and token.
+     */
+    function getFinalComponentsNumber(
+        string memory tokenType,
+        address token,
+        bool initial
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        if (tokenType.isEqualTo("ERC20")) {
+            return initial ? uint256(0) : uint256(1);
+        }
+
+        uint256 totalLength = 0;
+        Component[] memory components = getComponents(tokenType, token, 1e18);
+
+        for (uint256 i = 0; i < components.length; i++) {
+            totalLength = totalLength + getFinalComponentsNumber(
+                components[i].tokenType,
+                components[i].token,
+                false
+            );
+        }
+
+        return totalLength;
+    }
+
+    /**
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @return Array of Component structs.
+     */
+    function getComponents(
+        string memory tokenType,
+        address token,
+        uint256 value
+    )
+        internal
+        view
+        returns (Component[] memory)
+    {
+        TokenAdapter adapter = TokenAdapter(tokenAdapter[tokenType]);
+        Component[] memory components;
+
+        try adapter.getComponents(token) returns (Component[] memory result) {
+            components = result;
+        } catch {
+            components = new Component[](0);
+        }
+
+        for (uint256 i = 0; i < components.length; i++) {
+            components[i].rate = components[i].rate * value / 1e18;
+        }
+
+        return components;
+    }
+
+    /**
+     * @notice Fulfills TokenUnit struct using type, address, and balance of the token.
+     * @param tokenType String with type of the token.
+     * @param token Address of the token.
+     * @param value Amount of tokens.
+     * @return TokenUnit struct with token info and balance.
+     */
+    function getTokenUnit(
+        string memory tokenType,
+        address token,
+        uint256 value
+    )
+        internal
+        view
+        returns (TokenUnit memory)
+    {
+        TokenAdapter adapter = TokenAdapter(tokenAdapter[tokenType]);
+
+        try adapter.getInfo(token) returns (TokenInfo memory result) {
+            return TokenUnit({
+                info: result,
+                value: value
+            });
+        } catch {
+            return TokenUnit({
+                info: TokenInfo({
+                    token: token,
+                    name: "Not available",
+                    symbol: "N/A",
+                    decimals: 18
+                }),
+                value: value
+            });
+        }
     }
 }

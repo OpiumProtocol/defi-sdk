@@ -39,8 +39,6 @@ module.exports = (deployer, network, accounts) => {
 
   const wethAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
 
-  const saiAddress = '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359';
-
   const saiPoolAddress = 0xb7896fce748396EcFC240F5a0d3Cc92ca42D7d84;
   const daiPoolAddress = 0x29fe7D60DdF151E5b52e5FAB4f1325da6b2bD958;
   const usdcPoolAddress = 0x0034Ea9808E620A0EF79261c51AF20614B742B24;
