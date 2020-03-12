@@ -7,7 +7,7 @@
 ## Logic
 0. (optional) Verifies the supplied signature and extracts the address of spender from it.
 1. Iterates over array of actions, checks adapter in AdapterRegistry, and delegatecalls corresponding InteractiveAdapter with assets, amounts, and additional data as arguments (deposit, or withdraw).
-2. Returns all the resulting tokens back to the user.
+2. Returns all the resulting tokens back to the account.
 ```javascript
 function executeActions(Action[] actions) external payable
 function executeActions(Action[] actions, Approval[] approvals, bytes signature) external payable
@@ -22,7 +22,7 @@ Sends all the assets under the request of Logic contract. Adds all the transferr
 function transferApprovedAssets(Approval[] approvals) external returns (address[])
 ```
 
-## InteractiveAdapter is [Adapter](#Adapter-interface) (interface)
+## InteractiveAdapter is [ProtocolAdapter](#Protocoladapter-interface) (interface)
 
 Interface for protocol wrappers.
 Includes all the functions required to be implemented.
@@ -38,5 +38,5 @@ MUST return addresses of the assets sent back to the `msg.sender`.
 
 #### `withdraw(address, uint256, bytes memory) external payable virtual returns (address[] memory)`
 
-Withdraws assets from the lending/borrow/swap/liquidity.
+Withdraws assets from the lending/borrow/liquidity.
 MUST return addresses of the assets sent back to the `msg.sender`.

@@ -1,89 +1,142 @@
 ## Table of Contents
 
-  - [AdapterRegistry](#adapterregistry-is-adapterassetsmanager)
-  - [AdapterAssetsManager (abstract contract)](#adapterassetsmanager-is-ownable-abstract-contract)
+  - [AdapterRegistry](#adapterregistry-is-protocolmanager-tokenadaptermanager)
+  - [ProtocolManager (abstract contract)](#protocolmanager-is-ownable-abstract-contract)
+  - [TokenAdapterManager (abstract contract)](#tokenadaptermanager-is-ownable-abstract-contract)
   - [Ownable](#ownable)
-  - [adapters/AaveAssetAdapter](#aaveadapter-is-adapter)
-  - [adapters/CompoundDebtAdapter](#compoundadapter-is-adapter)
-  - [adapters/CurveAdapter](#curveadapter-is-adapter)
-  - [adapters/DSRAdapter](#dsradapter-is-adapter)
-  - [adapters/MCDAssetAdapter](#mcdadapter-is-adapter)
+  - [adapters/AaveAssetAdapter](#aaveassetadapter-is-protocoladapter)
+  - [adapters/AaveDebtAdapter](#aavedebtadapter-is-protocoladapter)
+  - [adapters/AaveTokenAdapter](#aavetokenadapter-is-tokenadapter)
+  - [adapters/CompoundAssetAdapter](#compoundassetadapter-is-protocoladapter)
+  - [adapters/CompoundDebtAdapter](#compounddebtadapter-is-protocoladapter)
+  - [adapters/CompoundTokenAdapter](#compoundtokenadapter-is-tokenadapter)
+  - [adapters/CurveAdapter](#curveadapter-is-protocoladapter)
+  - [adapters/CurveTokenAdapter](#curvetokenadapter-is-tokenadapter)
+  - [adapters/DSRAdapter](#dsradapter-is-protocoladapter)
+  - [adapters/MCDAssetAdapter](#mcdassetadapter-is-protocoladapter-mkradapter-abstract-contract)
+  - [adapters/MCDDebtAdapter](#mcddebtadapter-is-protocoladapter-mkradapter-abstract-contract)
   - [adapters/MKRAdapter (abstract contract)](#mkradapter-abstract-contract)
-  - [adapters/PoolTogetherAdapter](#pooltogetheradapter-is-adapter)
-  - [adapters/SynthetixAssetAdapter](#synthetixadapter-is-adapter)
-  - [adapters/ZrxAdapter](#zrxadapter-is-adapter)
-  - [adapters/Adapter (interface)](#adapter-interface)
+  - [adapters/PoolTogetherAdapter](#pooltogetheradapter-is-protocoladapter)
+  - [adapters/PoolTogetherTokenAdapter](#pooltogethertokenadapter-is-tokenadapter)
+  - [adapters/SynthetixAssetAdapter](#synthetixassetadapter-is-protocoladapter)
+  - [adapters/SynthetixDebtAdapter](#synthetixdebtadapter-is-protocoladapter)
+  - [adapters/ZrxAdapter](#zrxadapter-is-protocoladapter)
+  - [adapters/ProtocolAdapter (interface)](#protocoladapter-interface)
+  - [adapters/TokenAdapter (interface)](#tokenadapter-interface)
 
-## AdapterRegistry is [AdapterAssetsManager](#adapterassetsmanager-is-ownable-abstract-contract)
+## AdapterRegistry is [ProtocolManager](#protocolmanager-is-ownable-abstract-contract), [TokenAdapterManager](#tokenadaptermanager-is-ownable-abstract-contract)
 
 Registry holding array of protocol adapters and checking balances and rates via these adapters.
 
 ### `view` functions
 
-#### `function getProtocolsBalancesAndRates(address user) returns (ProtocolBalancesAndRates[] memory)`
+#### `getBalances(address account) returns (ProtocolBalance[] memory)`
 
-Iterates over `adapters` list and appends balances and rates for all the supported assets.
+Iterates over all the supported protocols, their adapters and supported assets and appends balances.
 
-#### `function getProtocolsBalances(address user) returns (ProtocolBalances[] memory)`
+#### `getProtocolBalances(address account, string[] memory protocolNames) returns (ProtocolBalance[] memory)`
 
-Iterates over `adapters` list and appends balances for all the supported assets.
+Iterates over the `protocolNames`, their adapters and supported assets and appends balances.
 
-#### `function getProtocolsRates() returns (ProtocolRates[] memory)`
+#### `getAdapterBalances(address account, AdapterInfo[] memory protocolAdapters) returns (AdapterBalance[] memory)`
 
-Iterates over `adapters` list and appends rates for all the supported assets.
+Iterates over `protocolAdapters` and their assets and appends balances.
 
-#### `function getAssetBalances(address user, address adapter) returns (AssetBalance[] memory)`
+#### `getFullTokenUnit(string calldata tokenType, address token) returns (FullTokenUnit memory)`
 
-Iterates over `adapter`'s assets and appends balances.
+Returns the representation of the token's full share (1e18) in the underlying tokens.
+This function will show the real underlying tokens (e.g. cDAI and cUSDC for Curve Compound pool).
 
-#### `function getAssetRates(address adapter) returns (AssetRate[] memory)`
+#### `getFinalFullTokenUnit(string calldata tokenType, address token) returns (FullTokenUnit memory)`
 
-Iterates over `adapter`'s assets and appends rates.
+Returns the representation of the token's full share (1e18) in the underlying tokens.
+This function will try to recover the "deepest" underlying tokens (e.g. DAI and USDC for Curve Compound pool).
 
-#### `function getAssetBalances(address user, address adapter, address[] memory assets) returns (AssetBalance[] memory)`
-
-Iterates over the given `assets` for the given `adapter` and appends balances.
-
-#### `function getAssetRates(address adapter, address[] memory assets) returns (AssetRate[] memory)`
-
-Iterates over the given `assets` for the given `adapter` and appends rates.
-
-## AdapterAssetsManager is [Ownable](#ownable) (abstract contract)
+## ProtocolManager is [Ownable](#ownable) (abstract contract)
 
 Base contract for `AdapterRegistry` contract.
-Implements logic connected with `Adapter`s and their `assets` management.
+Implements logic connected with `ProtocolName`s, `ProtocolAdapter`s, and their `supportedTokens` management.
 
 ### State variables
 
 ```
-mapping(address => address) internal adapters;
-mapping(address => uint256) public addedAt;
-mapping(address => address[]) internal assets;
+mapping (string => string) internal nextProtocolName;
+mapping (string => ProtocolInfo) internal protocol;
 ```
 
 ### `onlyOwner` functions
 
-#### `function addAdapter(address newAdapter, address[] calldata newAssets)`
+#### `addProtocols()`
 
-New adapter is added before the first existing adapter.
+#### `removeProtocols()`
 
-#### `function removeAdapter(address oldAdapter)`
+#### `updateProtocolInfo()`
 
-#### `function replaceAdapter(address oldAdapter, address newAdapter, address[] newAssets)`
+Increases protocol version by 1.
 
-`newAssets` array is optional parameter. If empty, assets will remain unchanged.
+#### `addProtocolAdapters()`
 
-#### `function addAdapterAsset(address adapter, address asset)`
+Increases protocol version by 1.
 
-New asset is added after the last adapter's asset.
+#### `removeProtocolAdapters()`
 
-#### `function removeAdapterAsset(address adapter, uint256 assetIndex)`
+Increases protocol version by 1.
+
+#### `updateProtocolAdapterInfo()`
+
+Increases protocol version by 1.
 
 ### `view` functions
 
-#### `function getAdapterAssets(address adapter) returns (address[] memory)`
+#### `getProtocolNames()`
 
-#### `function getAdapters() returns (address[] memory)`
+Returns list of protocols' names.
+
+#### `getProtocolInfo(string calldata protocolName)`
+
+Returns name, description, websiteURL, iconURL and version of the protocol.
+
+#### `getProtocolAdapters(string calldata protocolName)`
+
+Returns adapters and their supported tokens addresses.
+
+#### `isValidProtocol(string memory protocolName)`
+
+Returns `true` if protocol name is listed in the registry and `false` otherwise.
+
+## TokenAdapterManager is [Ownable](#ownable) (abstract contract)
+
+Base contract for `AdapterRegistry` contract.
+Implements logic connected with `ProtocolName`s, `ProtocolAdapter`s, and their `supportedTokens` management.
+
+### State variables
+
+```
+mapping (string => string) internal nextTokenAdapterName;
+mapping (string => address) internal tokenAdapter;
+```
+
+### `onlyOwner` functions
+
+#### `addTokenAdapters()`
+
+#### `removeTokenAdapters()`
+
+#### `updateTokenAdapter()`
+
+### `view` functions
+
+#### `getTokenAdapterNames()`
+
+Returns list of token adapters' names.
+
+#### `getTokenAdapter(string calldata tokenAdapterName)`
+
+Returns token adapter address.
+
+#### `isValidTokenAdapter(string memory tokenAdapterName)`
+
+Returns `true` if token adapter name is listed in the registry and `false` otherwise.
 
 ## Ownable 
 
@@ -91,73 +144,127 @@ Base contract for `AdapterAssetsManager` and `Logic` contracts.
 Implements `Ownable` logic.
 Includes `onlyOwner` modifier, `transferOwnership()` function, and public state variable `owner`. 
 
-## AaveAssetAdapter is [Adapter](#Adapter-interface)
+## AaveAssetAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
-Adapter for Aave protocol.
+Asset adapter for Aave protocol.
 
-## CompoundDebtAdapter is [Adapter](#Adapter-interface)
+## AaveDebtAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
-Adapter for Compound protocol.
+Debt adapter for Aave protocol.
 
-## CurveAdapter is [Adapter](#Adapter-interface)
+## AaveTokenAdapter is [TokenAdapter](#tokenadapter-interface)
+
+Token adapter for ATokens.
+
+## CompoundAssetAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Asset adapter for Compound protocol.
+
+## CompoundDebtAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Debt adapter for Compound protocol.
+
+## CompoundTokenAdapter is [TokenAdapter](#tokenadapter-interface)
+
+Token adapter for CTokens.
+
+## CurveAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
 Adapter for [curve.fi](https://compound.curve.fi/) protocol.
-Currently, there is the only pool with cDAI/cUSDC locked on it.
 
-## DSRAdapter is [Adapter](#Adapter-interface)
+## CurveTokenAdapter is [TokenAdapter](#tokenadapter-interface)
+
+Token adapter for Curve pool tokens.
+
+## DyDxAssetAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Asset adapter for dYdX protocol.
+`getBalance()` function checks balance only for dYdX account with 0 index.
+
+## DyDxDebtAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Debt adapter for dYdX protocol.
+`getBalance()` function checks debt only for dYdX account with 0 index.
+
+
+## DSRAdapter is [ProtocolAdapter](#protocoladapter-interface), [MKRAdapter](#mkradapter-abstract-contract)
 
 Adapter for DSR protocol.
 
-## MCDAssetAdapter is [Adapter](#Adapter-interface)
+## MCDAssetAdapter is [ProtocolAdapter](#protocoladapter-interface), [MKRAdapter](#mkradapter-abstract-contract)
 
-Adapter for MCD vaults.
+Asset adapter for MCD vaults.
+
+## MCDDebtAdapter is [ProtocolAdapter](#protocoladapter-interface), [MKRAdapter](#mkradapter-abstract-contract)
+
+Debt adapter for MCD vaults.
 
 ## MKRAdapter (abstract contract)
 
 Base contract for Maker adapters.
 Includes all the required constants and `pure` functions with calculations.
 
-## PoolTogetherAdapter is [Adapter](#Adapter-interface)
+## PoolTogetherAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
-Adapter for PoolTogether protocol. Supports DAI and SAI pools.
+Adapter for PoolTogether protocol.
 
-## SynthetixAssetAdapter is [Adapter](#Adapter-interface)
+## PoolTogetherTokenAdapter is [TokenAdapter](#tokenadapter-interface)
 
-Adapter for Synthetix protocol.
+Token adapter for PoolTogether pools.
 
-`getAssetAmount()` function returns the following amounts:
-- amount of SNX tokens locked by minting sUSD tokens (positive);
-- amount of sUSD that should be burned to unlock SNX tokens (negative).
+## SynthetixAssetAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
-## ZrxAdapter is [Adapter](#Adapter-interface)
+Asset adapter for Synthetix protocol.
+Returns amount of SNX tokens locked by minting sUSD tokens.
+
+## SynthetixDebtAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Debt adapter for Synthetix protocol.
+Returns amount of sUSD tokens that should be burned to unlock SNX tokens.
+
+## UniswapAdapter is [ProtocolAdapter](#protocoladapter-interface)
+
+Adapter for Uniswap protocol.
+
+## UniswapTokenAdapter is [TokenAdapter](#tokenadapter-interface)
+
+Token adapter for Uniswap pool tokens.
+
+## ZrxAdapter is [ProtocolAdapter](#protocoladapter-interface)
 
 Adapter for 0x Staking protocol.
 
-## Adapter (interface)
+## ProtocolAdapter (interface)
 
 Interface for protocol adapters.
 Includes all the functions required to be implemented.
-Adapters inheriting this interface should be stateless.
-Only `internal constant` state variables may be used.
+Adapters inheriting this interface MUST be stateless.
+Only `internal constant` state variables MUST be used.
+Only `internal` functions SHOULD be used.
 
 ### Functions
 
-#### `function getProtocol() external pure virtual returns (string memory)`
+#### `adapterType() returns (string memory)`
+MUST return "Asset" or "Debt".
 
-MUST return name of the protocol.
+#### `tokenType() returns (string memory)`
+MUST return token type (default is "ERC20").
 
-#### `getAssetAmount(address, address) external view virtual returns (uint256)`
+#### `getBalance(address,address) returns (uint256)`
+MUST return amount of the given token locked on the protocol by the given account.
 
-MUST return amount of the given asset locked on the protocol by the given user.
+## TokenAdapter (interface)
 
-#### `function getAssetRate(address asset) external view virtual returns (Component[] memory)`
+Interface for token adapters.
+Includes all the functions required to be implemented.
+Adapters inheriting this interface MUST be stateless.
+Only `internal constant` state variables MUST be used.
+Only `internal` functions SHOULD be used.
 
-MUST return struct with underlying assets exchange rates for the given asset.
+### Functions
 
-Exchange rate is a number, such that 
+#### `getInfo(address) returns (TokenInfo memory)`
+MUST return TokenInfo struct with ERC20-style token info.
 
-```
-underlying asset amount = asset amount * exchange rate / 1e18
-``` 
-
-Note: rates are scaled by `1e18` due to rounding issues.
+#### `getComponents(address) returns (Component[] memory)`;
+MUST return array of Component structs with underlying tokens rates for the given token.
