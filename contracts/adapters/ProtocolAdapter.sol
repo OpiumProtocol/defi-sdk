@@ -11,12 +11,12 @@ import { AdapterInfo } from "../Structs.sol";
 interface ProtocolAdapter {
 
     /**
-     * @notice MUST return "Asset" or "Debt".
+     * @dev MUST return "Asset" or "Debt".
      */
     function adapterType() external pure returns (string memory);
 
     /**
-     * @notice MUST return token type (default is "ERC20").
+     * @dev MUST return token type (default is "ERC20").
      */
     function tokenType() external pure returns (string memory);
 

@@ -26,6 +26,7 @@ contract CurveAdapter is ProtocolAdapter {
 
     /**
      * @return Type of the adapter.
+     * @dev Implementation of ProtocolAdapter interface function.
      */
     function adapterType() external pure override returns (string memory) {
         return "Asset";
@@ -33,6 +34,7 @@ contract CurveAdapter is ProtocolAdapter {
 
     /**
      * @return Type of the token used in adapter.
+     * @dev Implementation of ProtocolAdapter interface function.
      */
     function tokenType() external pure override returns (string memory) {
         return "Curve pool token";
