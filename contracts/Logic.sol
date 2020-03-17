@@ -1,4 +1,4 @@
-pragma solidity 0.6.2;
+pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import { Action, Approval, ActionType, AmountType } from "./Structs.sol";
@@ -86,7 +86,7 @@ contract Logic is SignatureVerifier {
     }
 
     function executeAction(Action memory action) internal returns (address[] memory) {
-        require(adapterRegistry.isValidAdapter(action.adapter), "L: adapter is not valid!");
+//        require(adapterRegistry.isValidProtocolAdapter(action.adapter), "L: adapter is not valid!");
         require(action.actionType != ActionType.None, "L: wrong action type!");
         require(action.amounts.length == action.amountTypes.length, "L: inconsistent arrays![1]");
         require(action.amounts.length == action.assets.length, "L: inconsistent arrays![2]");
@@ -152,8 +152,8 @@ contract Logic is SignatureVerifier {
             } else {
                 address[] memory assets = new address[](1);
                 assets[0] = asset;
-                int256 signedAmount =
-                    adapterRegistry.getBalances(address(this), adapter, assets)[0].amount;
+                int256 signedAmount;// =
+//                    adapterRegistry.getBalances(address(this), adapter, assets)[0].amount;
                 totalAmount = uint256(signedAmount > 0 ? signedAmount : -signedAmount);
             }
             absoluteAmount = totalAmount * amount / RELATIVE_AMOUNT_BASE;

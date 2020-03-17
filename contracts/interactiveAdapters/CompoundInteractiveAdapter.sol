@@ -1,9 +1,22 @@
-pragma solidity 0.6.2;
+pragma solidity 0.6.4;
 pragma experimental ABIEncoderV2;
 
 import { InteractiveAdapter } from "./InteractiveAdapter.sol";
-import { CompoundAdapter, CToken } from "../adapters/CompoundAdapter.sol";
+import { CompoundAssetAdapter } from "../adapters/compound/CompoundAssetAdapter.sol";
 import { ERC20 } from "../ERC20.sol";
+
+
+/**
+ * @dev CToken contract interface.
+ * Only the functions required for CompoundDebtAdapter contract are added.
+ * The CToken contract is available here
+ * github.com/compound-finance/compound-protocol/blob/master/contracts/CToken.sol.
+ */
+interface CToken {
+    function mint(uint256) external returns (uint256);
+    function redeem(uint256) external returns (uint256);
+    function underlying() external view returns (address);
+}
 
 
 /**
@@ -21,7 +34,9 @@ interface CEther {
  * @title Interactive adapter for Compound protocol lending.
  * @dev Implementation of InteractiveAdapter interface.
  */
-contract CompoundInteractiveAdapter is InteractiveAdapter, CompoundAdapter {
+contract CompoundInteractiveAdapter is InteractiveAdapter, CompoundAssetAdapter {
+
+    address internal constant CETH = 0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5;
 
     /**
      * @notice Deposits asset to the Compound protocol.
@@ -46,7 +61,7 @@ contract CompoundInteractiveAdapter is InteractiveAdapter, CompoundAdapter {
         address[] memory tokensToBeWithdrawn = new address[](1);
 
         if (assets[0] == CETH) {
-            CEther(CETH).mint.value(amounts[0])();
+            CEther(CETH).mint{value: amounts[0]}();
 
             tokensToBeWithdrawn[0] = CETH;
             return tokensToBeWithdrawn;

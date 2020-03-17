@@ -6,10 +6,10 @@ import { ERC20 } from "../../ERC20.sol";
 
 
 /**
- * @title Asset adapter for Compound protocol.
- * @dev Implementation of Adapter interface.
+ * @title Adapter for Chai protocol.
+ * @dev Implementation of ProtocolAdapter interface.
  */
-contract CompoundAssetAdapter is ProtocolAdapter {
+contract ChaiAdapter is ProtocolAdapter {
 
     /**
      * @return Type of the adapter.

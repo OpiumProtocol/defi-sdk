@@ -7,6 +7,7 @@ interface ERC20 {
     function transfer(address, uint256) external returns (bool);
     function transferFrom(address, address, uint256) external returns (bool);
     function balanceOf(address) external view returns (uint256);
+    function allowance(address, address) external view returns (uint256);
     function totalSupply() external view returns (uint256);
     function decimals() external view returns (uint8);
     function symbol() external view returns (string memory);

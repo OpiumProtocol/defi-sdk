@@ -9,7 +9,7 @@ import { ERC20 } from "../../ERC20.sol";
 
 /**
  * @dev Pot contract interface.
- * Only the functions required for DSRAdapter contract are added.
+ * Only the functions required for ChaiTokenAdapter contract are added.
  * The Pot contract is available here
  * github.com/makerdao/dss/blob/master/src/pot.sol.
  */
@@ -45,12 +45,14 @@ contract ChaiTokenAdapter is TokenAdapter, MKRAdapter {
      * @dev Implementation of TokenAdapter interface function.
      */
     function getComponents(address) external view override returns (Component[] memory) {
+        Pot pot = Pot(POT);
         Component[] memory underlyingTokens = new Component[](1);
 
         underlyingTokens[0] = Component({
             token: DAI,
             tokenType: "ERC20",
-            rate:
+            // solhint-disable-next-line not-rely-on-time
+            rate: mkrRmul(mkrRmul(mkrRpow(pot.dsr(), now - pot.rho(), ONE), pot.chi()), 1e18)
         });
 
         return underlyingTokens;
