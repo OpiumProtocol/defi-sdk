@@ -188,7 +188,7 @@ contract('CurveAdapter', () => {
     )
       .call()
       .then((result) => {
-        assert.equal(result.balances.length, 0);
+        assert.deepEqual(result.balances[0].underlying, []);
       });
   });
 });
